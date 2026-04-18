@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora de Pagos — TEB MP</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: #e2e0d8;
+    --border-strong: #c8c6bc;
+    --text: #1a1917;
+    --text-muted: #6b6960;
+    --text-faint: #a8a69e;
+    --green: #1a6b45;
+    --green-bg: #e8f5ee;
+    --red: #8b2020;
+    --red-bg: #fdeaea;
+    --amber: #7a4f00;
+    --amber-bg: #fef3d8;
+    --accent: #1a1917;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+  }
+  .container { max-width: 560px; margin: 0 auto; }
+  header { margin-bottom: 2rem; }
+  header h1 {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+  }
+  header p {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    margin-bottom: 1rem;
+  }
+  .field { margin-bottom: 12px; }
+  .field:last-child { margin-bottom: 0; }
+  .field label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+  }
+  input[type=number], input[type=text] {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 15px;
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+    transition: border-color .15s;
+  }
+  input:focus { border-color: var(--accent); background: #fff; }
+  .hint { font-size: 11px; color: var(--text-faint); margin-top: 5px; }
+  .hint a { color: var(--text-muted); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 1rem; }
+  .metric {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+  }
+  .metric-label { font-size: 11px; color: var(--text-muted); margin-bottom: 4px; }
+  .metric-value { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; font-family: 'DM Mono', monospace; }
+  .metric-sub { font-size: 11px; color: var(--text-faint); margin-top: 3px; }
+  .btn {
+    width: 100%;
+    padding: 11px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: all .15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn:hover { background: var(--bg); }
+  .btn:active { transform: scale(.99); }
+  .btn-dark {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  .btn-dark:hover { opacity: .88; background: var(--accent); }
+  .btn-row { display: flex; gap: 8px; }
+  .btn-cuenta {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 500;
+    font-family: inherit;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    cursor: pointer;
+    transition: all .15s;
+  }
+  .btn-cuenta:hover { border-color: var(--border-strong); background: var(--bg); }
+  .btn-cuenta.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .cuenta-info {
+    margin-top: 10px;
+    padding: 12px 14px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    line-height: 2;
+    display: none;
+  }
+  .cuenta-row { display: flex; gap: 8px; }
+  .cuenta-key { color: var(--text-muted); min-width: 120px; }
+  .cuenta-val { font-weight: 500; font-family: 'DM Mono', monospace; font-size: 12.5px; }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+  .badge-ok { background: var(--green-bg); color: var(--green); }
+  .badge-err { background: var(--red-bg); color: var(--red); }
+  .badge-warn { background: var(--amber-bg); color: var(--amber); }
+  .log { font-size: 12px; margin-top: 8px; line-height: 1.7; }
+  .log-ok { color: var(--green); }
+  .log-err { color: var(--red); }
+  .spinner {
+    width: 14px; height: 14px;
+    border: 2px solid var(--border);
+    border-top-color: var(--text);
+    border-radius: 50%;
+    animation: spin .6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .msg-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-size: 14px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    word-break: break-word;
+    color: var(--text);
+    font-family: inherit;
+  }
+  .subsection { font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 8px; }
+  .spacer { margin-top: 1.25rem; }
+  .hidden { display: none; }
+  .copy-ok { text-align: center; font-size: 12px; color: var(--green); margin-top: 6px; display: none; }
+  .status-row { display: flex; align-items: center; gap: 8px; font-size: 12px; margin-top: 8px; flex-wrap: wrap; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1rem 0; }
+  .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+  .tab-btn { flex: 1; padding: 11px; font-size: 14px; font-weight: 500; font-family: inherit; border: none; background: var(--surface); color: var(--text-muted); cursor: pointer; transition: all .15s; border-right: 1px solid var(--border); }
+  .tab-btn:last-child { border-right: none; }
+  .tab-btn.active { background: var(--accent); color: #fff; }
+  .tab-btn:hover:not(.active) { background: var(--bg); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+  .flag { font-size: 18px; margin-right: 6px; }
+
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>Calculadora de Pagos</h1>
+    <p>TEB MP — Argentina y México</p>
+  </header>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('ar')">🇦🇷 Argentina</button>
+    <button class="tab-btn" onclick="switchTab('mx')">🇲🇽 México</button>
+  </div>
+
+  <div class="tab-panel active" id="panel-ar">
+  <!-- DÓLAR -->
+  <div class="card">
+    <div class="card-title">Cotización dólar blue</div>
+    <div class="grid2">
+      <div class="metric">
+        <div class="metric-label">Dólar blue venta</div>
+        <div class="metric-value" id="dolar-valor">—</div>
+        <div class="metric-sub" id="dolar-sub">Sin datos</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Cotización aplicada (+$10)</div>
+        <div class="metric-value" id="dolar-aplicado">—</div>
+        <div class="metric-sub">Usado para el cálculo</div>
+      </div>
+    </div>
+    <button class="btn" id="btn-auto" onclick="fetchDolar()">
+      <span class="spinner" id="spinner" style="display:none"></span>
+      <span id="btn-auto-txt">Obtener cotización automática</span>
+    </button>
+    <div class="log" id="api-log"></div>
+    <div class="divider"></div>
+    <div class="field" style="margin-bottom:0">
+      <label>O ingresá el valor manualmente</label>
+      <input type="number" id="dolar-manual" placeholder="" oninput="setManual()" />
+      <p class="hint">Valor de venta de <a href="https://dolarhoy.com" target="_blank">dolarhoy.com</a></p>
+    </div>
+  </div>
+
+  <!-- DATOS -->
+  <div class="card">
+    <div class="card-title">Datos del pago</div>
+    <div class="field">
+      <label>Nombre de la persona</label>
+      <input type="text" id="nombre" placeholder="" oninput="calcular()" />
+    </div>
+    <div class="field" style="margin-bottom:0">
+      <label>Monto en USD</label>
+      <input type="number" id="monto-usd" placeholder="" oninput="calcular()" />
+    </div>
+  </div>
+
+  <!-- CUENTA -->
+  <div class="card">
+    <div class="card-title">Cuenta de cobro</div>
+    <div class="btn-row">
+      <button class="btn-cuenta" id="btn-sinalevich" onclick="seleccionarCuenta('sinalevich')">Sinalevich</button>
+      <button class="btn-cuenta" id="btn-marce" onclick="seleccionarCuenta('marce')">Marce</button>
+    </div>
+    <div class="cuenta-info" id="cuenta-info"></div>
+  </div>
+
+  <!-- RESULTADO -->
+  <div class="card hidden" id="resultado-card">
+    <div class="card-title">Resultado</div>
+    <div class="grid2" style="margin-bottom:0">
+      <div class="metric">
+        <div class="metric-label">Monto USD</div>
+        <div class="metric-value" id="res-usd">—</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Total en pesos</div>
+        <div class="metric-value" id="res-pesos">—</div>
+        <div class="metric-sub" id="res-calculo"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MENSAJES -->
+  <div class="card hidden" id="msg-card">
+    <div class="card-title">Mensajes para WhatsApp</div>
+
+    <div class="subsection">Mensaje 1 — Cotización</div>
+    <div class="msg-box" id="msg-cotizacion"></div>
+    <button class="btn btn-dark" style="margin-top:10px" onclick="copiar('msg-cotizacion','ok1')">Copiar mensaje de cotización</button>
+    <p class="copy-ok" id="ok1">¡Copiado al portapapeles!</p>
+
+    <div class="spacer"></div>
+    <div class="divider"></div>
+
+    <div class="subsection">Mensaje 2 — Datos de transferencia</div>
+    <div class="msg-box" id="msg-cuenta"></div>
+    <button class="btn btn-dark" style="margin-top:10px" onclick="copiar('msg-cuenta','ok2')">Copiar datos de transferencia</button>
+    <p class="copy-ok" id="ok2">¡Copiado al portapapeles!</p>
+  </div>
+
+</div>
+
+  </div><!-- end panel-ar -->
+
+  <!-- MÉXICO PANEL -->
+  <div class="tab-panel" id="panel-mx">
+
+    <div class="card">
+      <div class="card-title">Cotización dólar — México</div>
+      <div class="grid2">
+        <div class="metric"><div class="metric-label">Venta (promedio bancos)</div><div class="metric-value" id="mx-dolar-valor">—</div><div class="metric-sub" id="mx-dolar-sub">Sin datos</div></div>
+        <div class="metric"><div class="metric-label">Tipo de cambio</div><div class="metric-value" id="mx-dolar-aplicado">—</div><div class="metric-sub">Exacto de eldolar.info</div></div>
+      </div>
+      <button class="btn" id="mx-btn-auto" onclick="fetchDolarMX()" style="margin-bottom:10px">
+        <span class="spinner" id="mx-spinner" style="display:none"></span>
+        <span id="mx-btn-txt">Obtener cotización automática</span>
+      </button>
+      <div class="log" id="mx-api-log"></div>
+      <div class="divider"></div>
+      <div class="field" style="margin-bottom:0">
+        <label>O ingresá el valor manualmente</label>
+        <input type="number" id="mx-dolar-manual" step="0.01" placeholder="" oninput="setManualMX()" />
+        <p class="hint">Valor de venta de <a href="https://www.eldolar.info/es-MX/mexico/dia/hoy" target="_blank">eldolar.info</a></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Datos del pago</div>
+      <div class="field"><label>Nombre de la persona</label><input type="text" id="mx-nombre" placeholder="" oninput="calcularMX()" /></div>
+      <div class="field" style="margin-bottom:0"><label>Monto en USD</label><input type="number" id="mx-monto-usd" placeholder="" oninput="calcularMX()" /></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Cuenta de cobro</div>
+      <div class="btn-row">
+        <button class="btn-cuenta" id="btn-luciana" onclick="seleccionarCuentaMX('luciana')">Luciana MXN</button>
+        <button class="btn-cuenta" id="btn-maru" onclick="seleccionarCuentaMX('maru')">Maru MXN</button>
+      </div>
+      <div class="cuenta-info" id="mx-cuenta-info"></div>
+    </div>
+
+    <div class="card hidden" id="mx-resultado-card">
+      <div class="card-title">Resultado</div>
+      <div class="grid2" style="margin-bottom:0">
+        <div class="metric"><div class="metric-label">Monto USD</div><div class="metric-value" id="mx-res-usd">—</div></div>
+        <div class="metric"><div class="metric-label">Total en MXN</div><div class="metric-value" id="mx-res-mxn">—</div><div class="metric-sub" id="mx-res-calculo"></div></div>
+      </div>
+    </div>
+
+    <div class="card hidden" id="mx-msg-card">
+      <div class="card-title">Mensajes para WhatsApp</div>
+      <div class="subsection">Mensaje 1 — Cotización</div>
+      <div class="msg-box" id="mx-msg-cotizacion"></div>
+      <button class="btn btn-dark" style="margin-top:10px" onclick="copiar('mx-msg-cotizacion','mx-ok1')">Copiar mensaje de cotización</button>
+      <p class="copy-ok" id="mx-ok1">¡Copiado al portapapeles!</p>
+      <div class="spacer"></div>
+      <div class="divider"></div>
+      <div class="subsection">Mensaje 2 — Datos de transferencia</div>
+      <div class="msg-box" id="mx-msg-cuenta"></div>
+      <button class="btn btn-dark" style="margin-top:10px" onclick="copiar('mx-msg-cuenta','mx-ok2')">Copiar datos de transferencia</button>
+      <p class="copy-ok" id="mx-ok2">¡Copiado al portapapeles!</p>
+    </div>
+
+  </div><!-- end panel-mx -->
+
+<script>
+let dolarBlue = null, dolarAplicado = null, cuentaSeleccionada = null;
+
+const CUENTAS = {
+  sinalevich: { campos:[['Titular','Sinalevich Gabriela Judith'],['CUIT/CUIL','27-18315185-7'],['Banco','Santander'],['Tipo de cuenta','Cuenta única'],['Sucursal','210'],['Cuenta','210-020860/2'],['CBU','0720210288000002086022'],['Alias','PAGOSTEB']] },
+  marce: { campos:[['Banco','Macro BMA'],['Tipo de cuenta','Cuenta en pesos'],['Titular','Marcelo Nicolás Rosa'],['DNI','31.262.271'],['Alias','marcelorosa']] }
+};
+
+const FUENTES = [
+  {
+    nombre: 'dolarhoy.com',
+    url: null,
+    fetchFn: async () => {
+      // Dolarhoy no tiene API pública, leemos la página y extraemos el valor de venta blue
+      const r = await fetch('https://dolarhoy.com/', { signal: AbortSignal.timeout(8000) });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      const html = await r.text();
+      // Busca el bloque de dólar blue y extrae valor de venta
+      // El HTML tiene patrones como: "Venta</div><div...>$1.250" o similar
+      const match = html.match(/blue[\s\S]{0,500}?venta[\s\S]{0,200}?\$?\s*([0-9]{3,5})/i)
+                 || html.match(/([0-9]{3,5})\s*<\/[^>]+>\s*<[^>]+>\s*venta/i)
+                 || html.match(/blue[\s\S]{0,300}?([1-9][0-9]{2,4})/i);
+      if (!match) throw new Error('No se pudo parsear');
+      const val = parseInt(match[1].replace(/\./g,''));
+      if (val < 100 || val > 10000) throw new Error('Valor fuera de rango');
+      return val;
+    }
+  },
+  { nombre: 'dolarapi.com (respaldo)', url: 'https://dolarapi.com/v1/dolares/blue', parse: d => d.venta },
+  { nombre: 'bluelytics.com.ar (respaldo)', url: 'https://api.bluelytics.com.ar/v2/latest', parse: d => d.blue.value_sell },
+];
+
+function log(msg, tipo='') {
+  const el = document.getElementById('api-log');
+  const div = document.createElement('div');
+  div.className = tipo ? 'log-'+tipo : '';
+  div.textContent = msg;
+  el.appendChild(div);
+}
+function clearLog() { document.getElementById('api-log').innerHTML = ''; }
+
+async function fetchDolar() {
+  const btn = document.getElementById('btn-auto');
+  const sp = document.getElementById('spinner');
+  const txt = document.getElementById('btn-auto-txt');
+  btn.disabled = true; sp.style.display='inline-block'; txt.textContent='Consultando...';
+  clearLog();
+  for (const f of FUENTES) {
+    log(`Probando ${f.nombre}...`);
+    try {
+      let val;
+      if (f.fetchFn) {
+        val = await f.fetchFn();
+      } else {
+        const r = await fetch(f.url, { signal: AbortSignal.timeout(6000) });
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        const data = await r.json();
+        val = f.parse(data);
+      }
+      if (val && val > 100) {
+        log(`✓ OK — ${f.nombre}`, 'ok');
+        setDolar(Math.round(val));
+        btn.disabled=false; sp.style.display='none'; txt.textContent='Actualizar cotización';
+        return;
+      } else throw new Error('Valor inválido');
+    } catch(e) { log(`✗ ${e.message} — ${f.nombre}`, 'err'); }
+  }
+  log('Sin conexión a APIs. Ingresá el valor manualmente.', 'err');
+  btn.disabled=false; sp.style.display='none'; txt.textContent='Reintentar';
+}
+
+function setManual() {
+  const v = parseInt(document.getElementById('dolar-manual').value);
+  if (!isNaN(v) && v > 100) {
+    clearLog(); log('✓ Valor ingresado manualmente', 'ok');
+    setDolar(v);
+  }
+}
+
+function setDolar(num) {
+  dolarBlue = num; dolarAplicado = num + 10;
+  document.getElementById('dolar-valor').textContent = '$' + num.toLocaleString('es-AR');
+  document.getElementById('dolar-aplicado').textContent = '$' + dolarAplicado.toLocaleString('es-AR');
+  document.getElementById('dolar-sub').textContent = 'Venta: $' + num.toLocaleString('es-AR');
+  calcular();
+}
+
+function fechaHora() {
+  const n = new Date();
+  return {
+    fecha: `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`,
+    hora: `${String(n.getHours()).padStart(2,'0')}:${String(n.getMinutes()).padStart(2,'0')}`
+  };
+}
+
+function seleccionarCuenta(id) {
+  cuentaSeleccionada = id;
+  document.querySelectorAll('.btn-cuenta').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+id).classList.add('active');
+  const info = document.getElementById('cuenta-info');
+  info.style.display = 'block';
+  info.innerHTML = CUENTAS[id].campos.map(([k,v]) =>
+    `<div class="cuenta-row"><span class="cuenta-key">${k}:</span>&nbsp;<span class="cuenta-val">${v}</span></div>`
+  ).join('');
+  calcular();
+}
+
+function calcular() {
+  const nombre = document.getElementById('nombre').value.trim();
+  const usd = parseFloat(document.getElementById('monto-usd').value);
+  if (!nombre || isNaN(usd) || usd <= 0 || !dolarAplicado) {
+    document.getElementById('resultado-card').classList.add('hidden');
+    document.getElementById('msg-card').classList.add('hidden');
+    return;
+  }
+  const pesos = Math.round(usd * dolarAplicado);
+  document.getElementById('res-usd').textContent = 'USD ' + usd.toLocaleString('es-AR');
+  document.getElementById('res-pesos').textContent = '$' + pesos.toLocaleString('es-AR');
+  document.getElementById('res-calculo').textContent = `USD ${usd} × $${dolarAplicado.toLocaleString('es-AR')}`;
+  document.getElementById('resultado-card').classList.remove('hidden');
+
+  const {fecha, hora} = fechaHora();
+  document.getElementById('msg-cotizacion').textContent =
+`Cotización para ${nombre} con fecha ${fecha} a las ${hora}hs
+
+USD ${usd.toLocaleString('es-AR')} equivalen a $${pesos.toLocaleString('es-AR')} al tipo de cambio actual.
+
+Cuando hagas el pago, por favor enviá el comprobante por este medio 🙏
+
+⚠️ Importante: esta cotización tiene una vigencia de 1 hora. Transcurrido ese plazo, será necesario verificar posibles actualizaciones en el tipo de cambio.`;
+
+  document.getElementById('msg-cuenta').textContent = cuentaSeleccionada
+    ? CUENTAS[cuentaSeleccionada].campos.map(([k,v]) => `${k}\n${v}`).join('\n')
+    : '— Seleccioná una cuenta arriba —';
+
+  document.getElementById('msg-card').classList.remove('hidden');
+}
+
+function copiar(id, okId) {
+  const txt = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(txt).then(() => {
+    const ok = document.getElementById(okId);
+    ok.style.display = 'block';
+    setTimeout(() => ok.style.display = 'none', 2500);
+  });
+}
+
+
+// ---- MÉXICO ----
+let dolarMX = null;
+let mxCuentaSeleccionada = null;
+
+const CUENTAS_MX = {
+  luciana: { campos:[['Banco','Kapital Bank'],['Titular','Luciana Celeste Sacca'],['Número de cuenta','00001561138'],['CLABE','128180000015611383']] },
+  maru: { campos:[['Banco','Santander'],['Titular','María Eugenia Prado Conti'],['CLABE','014180605982131706'],['Nº de cuenta','60598213170'],['Nº sucursal','5760 - Hipódromo Condesa']] }
+};
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-'+tab).classList.add('active');
+  event.target.classList.add('active');
+}
+
+async function fetchDolarMX() {
+  const btn = document.getElementById('mx-btn-auto');
+  const sp = document.getElementById('mx-spinner');
+  const txt = document.getElementById('mx-btn-txt');
+  const logEl = document.getElementById('mx-api-log');
+  btn.disabled=true; sp.style.display='inline-block'; txt.textContent='Consultando...';
+  logEl.innerHTML = '';
+
+  // Múltiples fuentes para MXN
+  const fuentes = [
+    {
+      nombre: 'dolarapi.com',
+      fn: async () => {
+        const r = await fetch('https://dolarapi.com/v1/cotizaciones/mxn', { signal: AbortSignal.timeout(6000) });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        // Busca venta o sell
+        const val = d.venta || d.sell || (Array.isArray(d) && d[0]?.venta);
+        if (!val) throw new Error('Sin valor');
+        return parseFloat(val);
+      }
+    },
+    {
+      nombre: 'open.er-api.com',
+      fn: async () => {
+        const r = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(6000) });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        if (!d.rates?.MXN) throw new Error('Sin MXN');
+        return d.rates.MXN;
+      }
+    },
+    {
+      nombre: 'cdn.jsdelivr (currency-api)',
+      fn: async () => {
+        const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json', { signal: AbortSignal.timeout(6000) });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        if (!d.usd?.mxn) throw new Error('Sin MXN');
+        return d.usd.mxn;
+      }
+    },
+    {
+      nombre: 'bluelytics (fallback ARS→MXN)',
+      fn: async () => {
+        // Usa exchangerate como último recurso
+        const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD', { signal: AbortSignal.timeout(6000) });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        if (!d.rates?.MXN) throw new Error('Sin MXN');
+        return d.rates.MXN;
+      }
+    }
+  ];
+
+  for (const f of fuentes) {
+    logEl.innerHTML += `<div>Probando ${f.nombre}...</div>`;
+    try {
+      const val = await f.fn();
+      if (val && val > 5 && val < 500) {
+        const rounded = Math.round(val * 10000) / 10000;
+        setDolarMX(rounded, f.nombre);
+        btn.disabled=false; sp.style.display='none'; txt.textContent='Actualizar cotización';
+        return;
+      } else throw new Error('Valor fuera de rango');
+    } catch(e) {
+      logEl.innerHTML += `<div style="color:var(--red)">✗ ${f.nombre}: ${e.message}</div>`;
+    }
+  }
+  logEl.innerHTML += '<div style="color:var(--red)">Sin conexión. Ingresá el valor manualmente desde <a href="https://www.eldolar.info/es-MX/mexico/dia/hoy" target="_blank">eldolar.info</a></div>';
+  btn.disabled=false; sp.style.display='none'; txt.textContent='Reintentar';
+}
+
+function setDolarMX(val, fuente) {
+  dolarMX = val;
+  document.getElementById('mx-dolar-valor').textContent = val.toFixed(4) + ' MXN';
+  document.getElementById('mx-dolar-aplicado').textContent = val.toFixed(4) + ' MXN';
+  document.getElementById('mx-dolar-sub').textContent = 'Fuente: ' + fuente;
+  document.getElementById('mx-api-log').innerHTML = `<span style="color:var(--green)">✓ OK — ${fuente}</span>`;
+  calcularMX();
+}
+
+function setManualMX() {
+  const v = parseFloat(document.getElementById('mx-dolar-manual').value);
+  if (!isNaN(v) && v > 1) {
+    dolarMX = v;
+    document.getElementById('mx-dolar-valor').textContent = v.toFixed(4) + ' MXN';
+    document.getElementById('mx-dolar-aplicado').textContent = v.toFixed(4) + ' MXN';
+    document.getElementById('mx-dolar-sub').textContent = 'Ingresado manualmente';
+    document.getElementById('mx-api-log').innerHTML = '<span style="color:var(--green)">✓ Valor ingresado manualmente</span>';
+    calcularMX();
+  }
+}
+
+function seleccionarCuentaMX(id) {
+  mxCuentaSeleccionada = id;
+  document.querySelectorAll('#panel-mx .btn-cuenta').forEach(b=>b.classList.remove('active'));
+  document.getElementById('btn-'+id).classList.add('active');
+  const info = document.getElementById('mx-cuenta-info');
+  info.style.display = 'block';
+  info.innerHTML = CUENTAS_MX[id].campos.map(([k,v]) =>
+    `<div class="cuenta-row"><span class="cuenta-key">${k}:</span>&nbsp;<span class="cuenta-val">${v}</span></div>`
+  ).join('');
+  calcularMX();
+}
+
+function calcularMX() {
+  const nombre = document.getElementById('mx-nombre').value.trim();
+  const usd = parseFloat(document.getElementById('mx-monto-usd').value);
+  if (!nombre || isNaN(usd) || usd <= 0 || !dolarMX) {
+    document.getElementById('mx-resultado-card').classList.add('hidden');
+    document.getElementById('mx-msg-card').classList.add('hidden');
+    return;
+  }
+  const mxn = Math.round(usd * dolarMX * 100) / 100;
+  document.getElementById('mx-res-usd').textContent = 'USD ' + usd.toLocaleString('es-MX');
+  document.getElementById('mx-res-mxn').textContent = '$' + mxn.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2});
+  document.getElementById('mx-res-calculo').textContent = `USD ${usd} × ${dolarMX.toFixed(4)} MXN`;
+  document.getElementById('mx-resultado-card').classList.remove('hidden');
+
+  const {fecha, hora} = fechaHora();
+  document.getElementById('mx-msg-cotizacion').textContent =
+`Cotización para ${nombre} con fecha ${fecha} a las ${hora}hs
+
+USD ${usd.toLocaleString('es-MX')} equivalen a $${mxn.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})} MXN al tipo de cambio actual.
+
+Cuando hagas el pago, por favor enviá el comprobante por este medio 🙏
+
+⚠️ Importante: esta cotización tiene una vigencia de 1 hora. Transcurrido ese plazo, será necesario verificar posibles actualizaciones en el tipo de cambio.`;
+
+  document.getElementById('mx-msg-cuenta').textContent = mxCuentaSeleccionada
+    ? CUENTAS_MX[mxCuentaSeleccionada].campos.map(([k,v]) => `${k}\n${v}`).join('\n')
+    : '— Seleccioná una cuenta arriba —';
+
+  document.getElementById('mx-msg-card').classList.remove('hidden');
+}
+
+// Auto-fetch al abrir
+fetchDolar();
+</script>
+</body>
+</html>
