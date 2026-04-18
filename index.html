@@ -489,13 +489,14 @@ function calcular() {
 
   const {fecha, hora} = fechaHora();
   document.getElementById('msg-cotizacion').textContent =
-`Cotización para ${nombre} con fecha ${fecha} a las ${hora}hs
+`Cotización para ${nombre}
+Fecha: ${fecha} – ${hora} hs
 
-USD ${usd.toLocaleString('es-AR')} equivalen a $${pesos.toLocaleString('es-AR')} al tipo de cambio actual.
+USD ${usd.toLocaleString('es-AR')} equivalen a $${pesos.toLocaleString('es-AR')} según el tipo de cambio actual.
 
-Cuando hagas el pago, por favor enviá el comprobante por este medio 🙏
+Cuando realices el pago, por favor enviá el comprobante por este medio 🙏
 
-⚠️ Importante: esta cotización tiene una vigencia de 1 hora. Transcurrido ese plazo, será necesario verificar posibles actualizaciones en el tipo de cambio.`;
+⚠️ Importante: esta cotización tiene una vigencia de 1 hora. Transcurrido ese plazo, deberá actualizarse según el tipo de cambio vigente.`;
 
   document.getElementById('msg-cuenta').textContent = cuentaSeleccionada
     ? CUENTAS[cuentaSeleccionada].campos.map(([k,v]) => `${k}\n${v}`).join('\n')
@@ -652,13 +653,14 @@ function calcularMX() {
 
   const {fecha, hora} = fechaHora();
   document.getElementById('mx-msg-cotizacion').textContent =
-`Cotización para ${nombre} con fecha ${fecha} a las ${hora}hs
+`Cotización para ${nombre}
+Fecha: ${fecha} – ${hora} hs
 
-USD ${usd.toLocaleString('es-MX')} equivalen a $${mxn.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})} MXN al tipo de cambio actual.
+USD ${usd.toLocaleString('es-MX')} equivalen a $${mxn.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2})} MXN según el tipo de cambio actual.
 
-Cuando hagas el pago, por favor enviá el comprobante por este medio 🙏
+Cuando realices el pago, por favor enviá el comprobante por este medio 🙏
 
-⚠️ Importante: esta cotización tiene una vigencia de 1 hora. Transcurrido ese plazo, será necesario verificar posibles actualizaciones en el tipo de cambio.`;
+⚠️ Importante: esta cotización tiene una vigencia de 1 hora. Transcurrido ese plazo, deberá actualizarse según el tipo de cambio vigente.`;
 
   document.getElementById('mx-msg-cuenta').textContent = mxCuentaSeleccionada
     ? CUENTAS_MX[mxCuentaSeleccionada].campos.map(([k,v]) => `${k}\n${v}`).join('\n')
