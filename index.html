@@ -542,54 +542,67 @@ async function fetchDolarMX() {
   // Múltiples fuentes para MXN
   const fuentes = [
     {
-      nombre: 'eldolar.info (Venta bancaria)',
-      fn: async () => {
-        // eldolar.info tiene un endpoint JSON no documentado
-        const r = await fetch('https://www.eldolar.info/api/mexico/today', { signal: AbortSignal.timeout(8000) });
-        if (!r.ok) throw new Error('HTTP '+r.status);
-        const d = await r.json();
-        const val = d?.sell || d?.venta || d?.data?.sell || d?.data?.venta;
-        if (!val) throw new Error('Sin valor');
-        return parseFloat(val);
-      }
-    },
-    {
-      nombre: 'eldolar.info (scraping)',
+      nombre: 'eldolar.info (scraping directo)',
       fn: async () => {
         const r = await fetch('https://www.eldolar.info/es-MX/mexico/dia/hoy', { signal: AbortSignal.timeout(8000) });
         if (!r.ok) throw new Error('HTTP '+r.status);
         const html = await r.text();
-        // Extrae el valor de Venta del promedio bancario (última fila n=13)
-        // Aparece como "Venta17.4281" o en la fila n=13
-        const match = html.match(/Venta<\/th>[^]*?<td[^>]*>[\d.]+<\/td>[^]*?<td[^>]*>([\d.]+)<\/td>/i)
-                   || html.match(/n = \d+[^]*?<\/td>[^]*?<td[^>]*>[\d.]+<\/td>[^]*?<td[^>]*>([\d.]+)<\/td>/i)
-                   || html.match(/Venta([\d]{2}\.[\d]{3,4})/);
-        if (!match) throw new Error('No se pudo parsear');
-        const val = parseFloat(match[1]);
-        if (isNaN(val) || val < 10 || val > 100) throw new Error('Valor fuera de rango: ' + match[1]);
-        return val;
+        // El HTML tiene "Venta17.4282" como texto directo (sin espacios) antes del span
+        // También aparece en la última fila de la tabla como promedio n=13
+        const patterns = [
+          /Venta<\/th>[\s\S]*?<td[^>]*>[\d.]+<\/td>[\s\S]*?<td[^>]*>([\d]{2}\.[\d]{3,4})<\/td>/i,
+          /n = \d+<\/td>[\s\S]*?<td[^>]*>[\d.]+<\/td>[\s\S]*?<td[^>]*>([\d]{2}\.[\d]{3,4})<\/td>/i,
+          />Venta<[^>]*>[\s]*([\d]{2}\.[\d]{3,4})</i,
+          /Venta([\d]{2}\.[\d]{3,4})/,
+          /"sell"\s*:\s*"?([\d]{2}\.[\d]{3,4})"?/,
+          /([\d]{2}\.[\d]{3,4})[\s\S]{0,20}Venta/
+        ];
+        for (const p of patterns) {
+          const m = html.match(p);
+          if (m) {
+            const val = parseFloat(m[1]);
+            if (val >= 14 && val <= 30) return val;
+          }
+        }
+        throw new Error('No se pudo extraer el valor de venta');
       }
     },
     {
-      nombre: 'banxico.org.mx (interbancario)',
+      nombre: 'eldolar.info vía proxy CORS',
       fn: async () => {
-        const r = await fetch('https://www.banxico.org.mx/SieAPIRest/service/v1/series/SF43718/datos/oportuno?token=2b63a1be3ed2d6d0c93c0a9e46d4945b39e79fe9f7c83a3c3adabcd77e6d9ec8', { signal: AbortSignal.timeout(6000) });
+        const target = encodeURIComponent('https://www.eldolar.info/es-MX/mexico/dia/hoy');
+        const r = await fetch('https://api.allorigins.win/get?url=' + target, { signal: AbortSignal.timeout(10000) });
         if (!r.ok) throw new Error('HTTP '+r.status);
         const d = await r.json();
-        const val = d?.bmx?.series?.[0]?.datos?.[0]?.dato;
-        if (!val) throw new Error('Sin valor');
+        const html = d.contents || '';
+        const m = html.match(/Venta([\d]{2}\.[\d]{3,4})/)
+               || html.match(/([\d]{2}\.[\d]{3,4})[^\d]{0,10}Venta/);
+        if (!m) throw new Error('No se encontró valor de venta');
+        const val = parseFloat(m[1]);
+        if (val >= 14 && val <= 30) return val;
+        throw new Error('Valor fuera de rango: ' + val);
+      }
+    },
+    {
+      nombre: 'dolarapi.com MXN',
+      fn: async () => {
+        const r = await fetch('https://dolarapi.com/v1/cotizaciones/mxn', { signal: AbortSignal.timeout(6000) });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        const val = d?.venta || d?.sell;
+        if (!val) throw new Error('Sin valor venta');
         return parseFloat(val);
       }
     },
     {
-      nombre: 'open.er-api.com (referencia)',
+      nombre: 'open.er-api.com + margen bancario',
       fn: async () => {
         const r = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(6000) });
         if (!r.ok) throw new Error('HTTP '+r.status);
         const d = await r.json();
         if (!d.rates?.MXN) throw new Error('Sin MXN');
-        // El tipo interbancario es ~1-2% menor al de venta bancaria; ajustamos +2%
-        return Math.round(d.rates.MXN * 1.02 * 10000) / 10000;
+        // Diferencia histórica venta bancaria vs interbancario ≈ +1.6%
+        return Math.round(d.rates.MXN * 1.016 * 10000) / 10000;
       }
     }
   ];
