@@ -542,42 +542,13 @@ async function fetchDolarMX() {
   // Múltiples fuentes para MXN
   const fuentes = [
     {
-      nombre: 'allorigins → eldolar.info',
+      nombre: 'eldolar.info (teb-api)',
       fn: async () => {
-        const target = 'https://www.eldolar.info/es-MX/mexico/dia/hoy';
-        const r = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(target));
+        const r = await fetch('https://teb-api.vercel.app/api/cotizacion-mx');
         if (!r.ok) throw new Error('HTTP ' + r.status);
         const d = await r.json();
-        const html = d.contents || '';
-        const m = html.match(/Venta(1[4-9][.][0-9]{3,4})/) || html.match(/(1[4-9][.][0-9]{3,4})[^0-9]{0,20}[Vv]enta/);
-        if (!m) throw new Error('Valor no encontrado');
-        const val = parseFloat(m[1]);
-        if (val >= 14 && val <= 30) return val;
-        throw new Error('Fuera de rango: ' + val);
-      }
-    },
-    {
-      nombre: 'corsproxy.io → eldolar.info',
-      fn: async () => {
-        const r = await fetch('https://corsproxy.io/?' + encodeURIComponent('https://www.eldolar.info/es-MX/mexico/dia/hoy'));
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const html = await r.text();
-        const m = html.match(/Venta(1[4-9][.][0-9]{3,4})/) || html.match(/(1[4-9][.][0-9]{3,4})[^0-9]{0,20}[Vv]enta/);
-        if (!m) throw new Error('Valor no encontrado');
-        const val = parseFloat(m[1]);
-        if (val >= 14 && val <= 30) return val;
-        throw new Error('Fuera de rango: ' + val);
-      }
-    },
-    {
-      nombre: 'dolarapi.com MXN',
-      fn: async () => {
-        const r = await fetch('https://dolarapi.com/v1/cotizaciones/mxn');
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const d = await r.json();
-        const val = d && (d.venta || d.sell);
-        if (!val) throw new Error('Sin campo venta');
-        return parseFloat(val);
+        if (!d.ok || !d.venta) throw new Error(d.error || 'Sin valor');
+        return d.venta;
       }
     }
   ]
