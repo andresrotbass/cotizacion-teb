@@ -542,46 +542,54 @@ async function fetchDolarMX() {
   // Múltiples fuentes para MXN
   const fuentes = [
     {
-      nombre: 'dolarapi.com',
+      nombre: 'eldolar.info (Venta bancaria)',
       fn: async () => {
-        const r = await fetch('https://dolarapi.com/v1/cotizaciones/mxn', { signal: AbortSignal.timeout(6000) });
+        // eldolar.info tiene un endpoint JSON no documentado
+        const r = await fetch('https://www.eldolar.info/api/mexico/today', { signal: AbortSignal.timeout(8000) });
         if (!r.ok) throw new Error('HTTP '+r.status);
         const d = await r.json();
-        // Busca venta o sell
-        const val = d.venta || d.sell || (Array.isArray(d) && d[0]?.venta);
+        const val = d?.sell || d?.venta || d?.data?.sell || d?.data?.venta;
         if (!val) throw new Error('Sin valor');
         return parseFloat(val);
       }
     },
     {
-      nombre: 'open.er-api.com',
+      nombre: 'eldolar.info (scraping)',
+      fn: async () => {
+        const r = await fetch('https://www.eldolar.info/es-MX/mexico/dia/hoy', { signal: AbortSignal.timeout(8000) });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const html = await r.text();
+        // Extrae el valor de Venta del promedio bancario (última fila n=13)
+        // Aparece como "Venta17.4281" o en la fila n=13
+        const match = html.match(/Venta<\/th>[^]*?<td[^>]*>[\d.]+<\/td>[^]*?<td[^>]*>([\d.]+)<\/td>/i)
+                   || html.match(/n = \d+[^]*?<\/td>[^]*?<td[^>]*>[\d.]+<\/td>[^]*?<td[^>]*>([\d.]+)<\/td>/i)
+                   || html.match(/Venta([\d]{2}\.[\d]{3,4})/);
+        if (!match) throw new Error('No se pudo parsear');
+        const val = parseFloat(match[1]);
+        if (isNaN(val) || val < 10 || val > 100) throw new Error('Valor fuera de rango: ' + match[1]);
+        return val;
+      }
+    },
+    {
+      nombre: 'banxico.org.mx (interbancario)',
+      fn: async () => {
+        const r = await fetch('https://www.banxico.org.mx/SieAPIRest/service/v1/series/SF43718/datos/oportuno?token=2b63a1be3ed2d6d0c93c0a9e46d4945b39e79fe9f7c83a3c3adabcd77e6d9ec8', { signal: AbortSignal.timeout(6000) });
+        if (!r.ok) throw new Error('HTTP '+r.status);
+        const d = await r.json();
+        const val = d?.bmx?.series?.[0]?.datos?.[0]?.dato;
+        if (!val) throw new Error('Sin valor');
+        return parseFloat(val);
+      }
+    },
+    {
+      nombre: 'open.er-api.com (referencia)',
       fn: async () => {
         const r = await fetch('https://open.er-api.com/v6/latest/USD', { signal: AbortSignal.timeout(6000) });
         if (!r.ok) throw new Error('HTTP '+r.status);
         const d = await r.json();
         if (!d.rates?.MXN) throw new Error('Sin MXN');
-        return d.rates.MXN;
-      }
-    },
-    {
-      nombre: 'cdn.jsdelivr (currency-api)',
-      fn: async () => {
-        const r = await fetch('https://cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/usd.json', { signal: AbortSignal.timeout(6000) });
-        if (!r.ok) throw new Error('HTTP '+r.status);
-        const d = await r.json();
-        if (!d.usd?.mxn) throw new Error('Sin MXN');
-        return d.usd.mxn;
-      }
-    },
-    {
-      nombre: 'bluelytics (fallback ARS→MXN)',
-      fn: async () => {
-        // Usa exchangerate como último recurso
-        const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD', { signal: AbortSignal.timeout(6000) });
-        if (!r.ok) throw new Error('HTTP '+r.status);
-        const d = await r.json();
-        if (!d.rates?.MXN) throw new Error('Sin MXN');
-        return d.rates.MXN;
+        // El tipo interbancario es ~1-2% menor al de venta bancaria; ajustamos +2%
+        return Math.round(d.rates.MXN * 1.02 * 10000) / 10000;
       }
     }
   ];
