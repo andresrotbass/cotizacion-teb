@@ -537,39 +537,24 @@ async function fetchDolarMX() {
   const txt = document.getElementById('mx-btn-txt');
   const logEl = document.getElementById('mx-api-log');
   btn.disabled=true; sp.style.display='inline-block'; txt.textContent='Consultando...';
-  logEl.innerHTML = '';
-
-  // Múltiples fuentes para MXN
-  const fuentes = [
-    {
-      nombre: 'eldolar.info (teb-api)',
-      fn: async () => {
-        const r = await fetch('https://teb-api.vercel.app/api/cotizacion-mx');
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        const d = await r.json();
-        if (!d.ok || !d.venta) throw new Error(d.error || 'Sin valor');
-        return d.venta;
-      }
-    }
-  ]
-
-  for (const f of fuentes) {
-    logEl.innerHTML += `<div>Probando ${f.nombre}...</div>`;
-    try {
-      const val = await f.fn();
-      if (val && val > 5 && val < 500) {
-        const rounded = Math.round(val * 10000) / 10000;
-        setDolarMX(rounded, f.nombre);
-        btn.disabled=false; sp.style.display='none'; txt.textContent='Actualizar cotización';
-        return;
-      } else throw new Error('Valor fuera de rango');
-    } catch(e) {
-      logEl.innerHTML += `<div style="color:var(--red)">✗ ${f.nombre}: ${e.message}</div>`;
-    }
+  logEl.innerHTML = '<span style="color:var(--text-muted)">Despertando servidor... puede tardar hasta 15 segundos la primera vez ☕</span>';
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
+    const r = await fetch('https://teb-api.vercel.app/api/cotizacion-mx', { signal: controller.signal });
+    clearTimeout(timeout);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (!d.ok || !d.venta) throw new Error(d.error || 'Sin valor');
+    setDolarMX(d.venta, 'eldolar.info (teb-api)');
+    btn.disabled=false; sp.style.display='none'; txt.textContent='Actualizar cotización';
+  } catch(e) {
+    const msg = e.name === 'AbortError' ? 'Tiempo de espera agotado (15s). Reintentá o ingresá el valor manualmente.' : e.message;
+    logEl.innerHTML = '<span style="color:var(--red)">✗ ' + msg + '</span><br><span style="font-size:11px;color:var(--text-muted)">Ingresá el valor desde <a href="https://www.eldolar.info/es-MX/mexico/dia/hoy" target="_blank">eldolar.info</a></span>';
+    btn.disabled=false; sp.style.display='none'; txt.textContent='Reintentar';
   }
-  logEl.innerHTML += '<div style="color:var(--red)">Sin conexión. Ingresá el valor manualmente desde <a href="https://www.eldolar.info/es-MX/mexico/dia/hoy" target="_blank">eldolar.info</a></div>';
-  btn.disabled=false; sp.style.display='none'; txt.textContent='Reintentar';
 }
+
 
 function setDolarMX(val, fuente) {
   dolarMX = val;
@@ -638,6 +623,8 @@ Cuando realices el pago, por favor enviá el comprobante por este medio 🙏
 
 // Auto-fetch al abrir
 fetchDolar();
+// Ping silencioso para despertar la API de México
+pingAPI();
 </script>
 </body>
 </html>
